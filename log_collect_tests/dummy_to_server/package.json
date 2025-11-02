@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "start": "node --loader ts-node/esm ./dummy_log_program.ts",
+    "logs": "node --loader ts-node/esm ./log-generator.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "실제 애플리케이션 로그 생성기 및 테스트 프로그램",
   "devDependencies": {
     "@types/node": "^24.9.2",
     "axios": "^1.13.1",
