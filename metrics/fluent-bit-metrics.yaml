@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: logging
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluent-bit-metrics
+rules:
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - nodes
+      - nodes/proxy
+      - pods
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluent-bit-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fluent-bit-metrics
+subjects:
+  - kind: ServiceAccount
+    name: fluent-bit
+    namespace: logging
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: logging
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush        5
+        Daemon       Off
+        Log_Level    info
+        Parsers_File parsers.conf
+
+    [INPUT]
+        Name              tail
+        Tag               metrics.collector
+        Path              /var/log/containers/*metrics-collector*.log
+        Parser            metrics_json
+        Refresh_Interval  5
+        Skip_Long_Lines   On
+
+    [FILTER]
+        Name    grep
+        Match   metrics.collector
+        Exclude log Failed to query kubelet
+
+    [FILTER]
+        Name    grep
+        Match   metrics.collector
+        Exclude log Timed out while waiting for kubelet
+
+    [FILTER]
+        Name    record_modifier
+        Match   metrics.collector
+        Record  source  log-generator
+        Record  pipeline metrics
+
+    [FILTER]
+        Name    modify
+        Match   metrics.collector
+        Copy    timestamp_iso    @timestamp
+
+    [OUTPUT]
+        Name               stdout
+        Match              metrics.collector
+        Format             json_lines
+
+    [OUTPUT]
+        Name               kafka
+        Match              metrics.collector
+        Brokers            ${KAFKA_BROKERS}
+        Topics             metrics
+        Format             json
+        Timestamp_Key      @timestamp
+        Timestamp_Format   iso8601
+  parsers.conf: |
+    [PARSER]
+        Name        metrics_json
+        Format      json
+        Time_Key    timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S.%LZ
+        Time_Keep   On
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit
+  namespace: logging
+spec:
+  selector:
+    matchLabels:
+      app: fluent-bit
+  template:
+    metadata:
+      labels:
+        app: fluent-bit
+    spec:
+      serviceAccountName: fluent-bit
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: fluent-bit
+          image: fluent/fluent-bit:2.2
+          env:
+            - name: KAFKA_BROKERS
+              value: host.docker.internal:9092
+          volumeMounts:
+            - name: fluent-bit-config
+              mountPath: /fluent-bit/etc/
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+        - name: metrics-collector
+          image: metrics-collector:latest
+          imagePullPolicy: Never
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: TARGET_NAMESPACE
+              value: default
+            - name: TARGET_POD_PREFIX
+              value: log-generator
+            - name: SCRAPE_INTERVAL_MS
+              value: "10000"
+            - name: ALLOW_INSECURE_TLS
+              value: "false"
+      volumes:
+        - name: fluent-bit-config
+          configMap:
+            name: fluent-bit-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
