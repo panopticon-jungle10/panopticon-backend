@@ -47,15 +47,45 @@ export class KafkaController {
       if (req.rawBody) {
         const decodedTrace = ProtobufDecoder.processProtobuf(req.rawBody);
         spans = SpanTransformer.transformTraceData(decodedTrace);
+      } else if (this.isOtelJsonPayload(data)) {
+        const normalizedPayload = Array.isArray(data)
+          ? { resourceSpans: data }
+          : data;
+        spans = SpanTransformer.transformTraceData(normalizedPayload);
       } else {
         spans = Array.isArray(data) ? data : [data];
       }
 
+      console.log(
+        `[Traces] decoded span payloads (${spans.length}):`,
+        JSON.stringify(spans, null, 2),
+      );
       await this.kafkaService.sendSpans(spans);
-      this.logger.log(`Sent ${spans.length} span(s) to Kafka`);
+      this.logger.log(`Processed ${spans.length} span(s) from request`);
     } catch (error) {
       this.logger.error('Failed to ingest logs', error);
       throw error;
     }
+  }
+
+  /**
+   * OTLP JSON 형태인지 간단히 판별
+   */
+  private isOtelJsonPayload(payload: any): boolean {
+    if (!payload) {
+      return false;
+    }
+
+    if (payload.resourceSpans || payload.scopeSpans) {
+      return true;
+    }
+
+    if (Array.isArray(payload)) {
+      return payload.some(
+        (item) => item?.resource || item?.resourceSpans || item?.scopeSpans,
+      );
+    }
+
+    return false;
   }
 }

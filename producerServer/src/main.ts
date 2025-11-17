@@ -7,6 +7,18 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const PORT = process.env.PORT;
 
+  // CORS 설정 - 프론트엔드에서 트레이스 수집을 위해 필요
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173', // Vite 개발 서버
+    ],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'traceparent', 'tracestate'],
+    credentials: true,
+  });
+
   // Protobuf 처리를 위한 raw body 파서
   app.use(
     bodyParser.raw({

@@ -22,10 +22,11 @@ interface TopicConfig {
 @Injectable()
 export class KafkaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(KafkaService.name);
-  private kafka: Kafka;
-  private producer: Producer;
-  private admin: Admin;
+  private kafka?: Kafka;
+  private producer?: Producer;
+  private admin?: Admin;
   private isConnected = false;
+  private readonly isKafkaDisabled: boolean;
 
   // 토픽별 설정 정의
   private readonly topicConfigs: Record<string, TopicConfig> = {
@@ -48,6 +49,17 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   };
 
   constructor(private readonly configService: ConfigService) {
+    this.isKafkaDisabled =
+      (this.configService.get<string>('DISABLE_KAFKA') || '').toLowerCase() ===
+      'true';
+
+    if (this.isKafkaDisabled) {
+      this.logger.warn(
+        'Kafka disabled via DISABLE_KAFKA flag. Skipping Kafka initialization.',
+      );
+      return;
+    }
+
     const client =
       this.configService.get<string>('MSK_CLIENT') || 'panopticon-producer';
     // 환경변수에서 MSK 브로커 엔드포인트들을 가져와서 배열로 변환
@@ -110,11 +122,16 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
+    if (this.isKafkaDisabled) {
+      this.logger.warn('Kafka disabled. Skipping Kafka connections.');
+      return;
+    }
+
     try {
-      await this.admin.connect();
+      await this.admin!.connect();
       this.logger.log('Kafka Admin connected successfully');
 
-      await this.producer.connect();
+      await this.producer!.connect();
       this.isConnected = true;
       this.logger.log('Kafka Producer connected successfully');
 
@@ -127,12 +144,16 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
+    if (this.isKafkaDisabled) {
+      return;
+    }
+
     try {
-      await this.producer.disconnect();
+      await this.producer?.disconnect();
       this.isConnected = false;
       this.logger.log('Kafka Producer disconnected');
 
-      await this.admin.disconnect();
+      await this.admin?.disconnect();
       this.logger.log('Kafka Admin disconnected');
     } catch (error) {
       this.logger.error('Failed to disconnect Kafka Producer/Admin', error);
@@ -146,7 +167,12 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     topicKey: string,
     messages: Array<{ key?: string; value: string }>,
   ) {
-    if (!this.isConnected) {
+    if (this.isKafkaDisabled) {
+      this.logger.debug('Kafka disabled. Skipping sendMessage.');
+      return;
+    }
+
+    if (!this.isConnected || !this.producer) {
       throw new Error('Kafka Producer is not connected');
     }
 
@@ -226,6 +252,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   }
 
   isProducerConnected(): boolean {
+    if (this.isKafkaDisabled) {
+      return false;
+    }
     return this.isConnected;
   }
 
@@ -234,6 +263,11 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
    * - 각 토픽: 파티션 6개, retention 3일
    */
   async createTopics() {
+    if (this.isKafkaDisabled || !this.admin) {
+      this.logger.warn('Kafka disabled. Skipping topic creation.');
+      return;
+    }
+
     try {
       const existingTopics = await this.admin.listTopics();
       const topicsToCreate = [];
