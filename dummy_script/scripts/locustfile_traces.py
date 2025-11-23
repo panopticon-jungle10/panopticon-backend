@@ -1,13 +1,13 @@
 """
 Locust Performance Test for Producer Server - Traces
 
-Goal: Send 1,000,000+ trace spans (in chains of 3 spans each)
+Goal: Send 10,000,000 trace spans (in chains of 3 spans each)
 
 Usage:
     # Recommended: Use the provided shell script
     ./scripts/run-locust-traces.sh
 
-    # Or run directly (1M+ spans with 10 users)
+    # Or run directly (10M spans with 10 users)
     locust -f scripts/locustfile_traces.py --host https://api.jungle-panopticon.cloud/producer \
            --users 10 --spawn-rate 10 --headless
 
@@ -25,11 +25,11 @@ from locust.runners import MasterRunner
 # Configuration
 PRODUCER_URL = os.getenv('PRODUCER_URL', 'https://api.jungle-panopticon.cloud/producer')
 
-# Each request sends 20 spans (multiple trace chains)
-# Target: 1,000,000 spans = 50,000 requests (each with 20 spans)
-# Goal: 50,000 spans/sec → 20 seconds for 1M spans
-SPANS_PER_REQUEST = 20
-TARGET_REQUESTS = 50000  # 50,000 requests × 20 spans = 1,000,000 spans
+# Each request sends 40 spans (multiple trace chains)
+# Target: 10,000,000 spans = 250,000 requests (each with 40 spans)
+# Goal: Send 10M spans for performance testing
+SPANS_PER_REQUEST = 40
+TARGET_REQUESTS = 250000  # 250,000 requests × 40 spans = 10,000,000 spans
 current_request_count = 0
 
 
@@ -68,7 +68,7 @@ def generate_single_trace_chain():
     child2_span_id = generate_span_id()
 
     # Shared service name for this trace
-    service_name = "backend-service"
+    service_name = "demo-service"
 
     # Base timestamp
     base_time = datetime.now(timezone.utc) - timedelta(milliseconds=random.randint(0, 1000))
@@ -157,21 +157,21 @@ def generate_single_trace_chain():
 
 def generate_batch_spans():
     """
-    Generate a batch of 20 spans (6-7 trace chains).
+    Generate a batch of 40 spans (13-14 trace chains).
 
-    Returns a flat list of 20 spans from multiple independent traces.
+    Returns a flat list of 40 spans from multiple independent traces.
     Each trace maintains its own trace_id and parent-child relationships.
     """
     all_spans = []
 
-    # Generate 6 complete trace chains (6 × 3 = 18 spans)
-    for _ in range(6):
+    # Generate 13 complete trace chains (13 × 3 = 39 spans)
+    for _ in range(13):
         trace_chain = generate_single_trace_chain()
         all_spans.extend(trace_chain)
 
-    # Generate 2 more spans from a partial trace chain (to reach 20 total)
+    # Generate 1 more span from a partial trace chain (to reach 40 total)
     partial_trace = generate_single_trace_chain()
-    all_spans.extend(partial_trace[:2])  # Take only first 2 spans
+    all_spans.extend(partial_trace[:1])  # Take only first 1 span
 
     return all_spans
 
@@ -180,8 +180,7 @@ class TracesLoadTest(HttpUser):
     """
     Sends batches of trace spans to the producer server continuously.
 
-    Goal: Send 1,000,000 spans (50,000 requests × 20 spans each)
-    Target: 50,000 spans/sec → ~20 seconds for 1M spans
+    Goal: Send 10,000,000 spans (250,000 requests × 40 spans each)
     Will stop automatically when target is reached.
     """
 
@@ -193,7 +192,7 @@ class TracesLoadTest(HttpUser):
 
     @task
     def send_batch_spans(self):
-        """Send a batch of 20 spans (multiple trace chains) to /dummy/traces endpoint"""
+        """Send a batch of 40 spans (multiple trace chains) to /dummy/traces endpoint"""
         global current_request_count
 
         # Check if we've reached the target requests
@@ -201,7 +200,7 @@ class TracesLoadTest(HttpUser):
             self.environment.runner.quit()
             return
 
-        # Generate a batch of 20 spans from multiple trace chains
+        # Generate a batch of 40 spans from multiple trace chains
         batch_spans = generate_batch_spans()
 
         with self.client.post(
@@ -231,12 +230,12 @@ def on_test_start(environment, **kwargs):
         print("="*80)
         print(f"Target Server: {PRODUCER_URL}")
         print(f"Test Endpoint: POST /dummy/traces")
-        print(f"Spans per Request: {SPANS_PER_REQUEST} (batch of ~6-7 trace chains)")
+        print(f"Spans per Request: {SPANS_PER_REQUEST} (batch of ~13-14 trace chains)")
         print(f"Target Requests: {TARGET_REQUESTS:,}")
         print(f"Total Spans: ~{total_spans:,} spans")
-        print(f"Goal: 50,000 spans/sec → ~20 seconds for 1M spans")
+        print(f"Goal: Send 10,000,000 spans for performance testing")
         print(f"\nTrace Structure:")
-        print(f"  - Each batch contains 6-7 independent trace chains")
+        print(f"  - Each batch contains 13-14 independent trace chains")
         print(f"  - Each trace chain: Root → Child1 → Child2 (3 spans)")
         print(f"  - All spans in a trace share same trace_id")
         print(f"\nSpan Properties:")

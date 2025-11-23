@@ -30,6 +30,6 @@ async function bootstrap() {
     exclude: [{ path: '/health', method: RequestMethod.GET }],
   });
 
-  await app.listen(PORT || 3000);
+  await app.listen(PORT || 3005);
 }
 bootstrap();
