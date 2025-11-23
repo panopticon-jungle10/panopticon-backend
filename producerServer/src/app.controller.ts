@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-} from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -30,21 +23,21 @@ export class AppController {
    * @param data
    * @returns
    */
-  @Post('sdk/logs')
-  @HttpCode(HttpStatus.ACCEPTED)
-  async getLogsFromSdk(@Body() data: any) {
-    const logData = Array.isArray(data) ? data : [data];
-    console.log(JSON.stringify(logData, null, 2));
+  // @Post('sdk/logs')
+  // @HttpCode(HttpStatus.ACCEPTED)
+  // async getLogsFromSdk(@Body() data: any) {
+  //   const logData = Array.isArray(data) ? data : [data];
+  //   console.log(JSON.stringify(logData, null, 2));
 
-    return { success: true };
-  }
+  //   return { success: true };
+  // }
 
-  @Post('sdk/traces')
-  @HttpCode(HttpStatus.ACCEPTED)
-  async getTraceFromSdk(@Body() data: any) {
-    const traceData = Array.isArray(data) ? data : [data];
-    console.log(JSON.stringify(traceData, null, 2));
+  // @Post('sdk/traces')
+  // @HttpCode(HttpStatus.ACCEPTED)
+  // async getTraceFromSdk(@Body() data: any) {
+  //   const traceData = Array.isArray(data) ? data : [data];
+  //   console.log(JSON.stringify(traceData, null, 2));
 
-    return { success: true };
-  }
+  //   return { success: true };
+  // }
 }

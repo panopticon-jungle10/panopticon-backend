@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-// import { KafkaModule } from './kafka/kafka.module';
-// import { S3Module } from './s3/s3.module';
+import { KafkaModule } from './kafka/kafka.module';
+import { S3Module } from './s3/s3.module';
 
 @Module({
   imports: [
@@ -17,8 +17,8 @@ import { AppService } from './app.service';
           : '.env.development', // 로컬 개발: .env.development 사용
       ignoreEnvFile: process.env.NODE_ENV === 'production', // 배포 시 .env 파일 무시
     }),
-    // KafkaModule,
-    // S3Module,
+    KafkaModule,
+    S3Module,
   ],
   controllers: [AppController],
   providers: [AppService],

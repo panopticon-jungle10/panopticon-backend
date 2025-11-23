@@ -156,7 +156,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     const normalLog = logData.filter((log) => log.service_name);
 
     const messages = normalLog.map((log) => ({
-      key: log.trace_id || 'unknown', // 파티션 키: service_name
+      key: log.timestamp || 'unknown', // 파티션 키: service_name
       value: JSON.stringify(log),
     }));
 
