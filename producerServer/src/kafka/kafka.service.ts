@@ -153,10 +153,8 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
    * Log 데이터 전송 (파티션 키: service_name)
    */
   async sendLogs(logData: any[]) {
-    const normalLog = logData.filter((log) => log.service_name);
-
-    const messages = normalLog.map((log) => ({
-      key: log.timestamp || 'unknown', // 파티션 키: service_name
+    const messages = logData.map((log) => ({
+      key: log.trace_id || log.timestamp, // 파티션 키: trace or timestamp
       value: JSON.stringify(log),
     }));
 
