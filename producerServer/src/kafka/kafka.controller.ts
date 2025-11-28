@@ -83,7 +83,6 @@ export class KafkaController {
   @HttpCode(HttpStatus.ACCEPTED)
   async getLogsFromSdk(@Body() data: any) {
     const logData = Array.isArray(data) ? data : [data];
-    console.log(JSON.stringify(logData, null, 2));
     await this.kafkaService.sendLogs(logData);
 
     return { success: true };
@@ -93,7 +92,6 @@ export class KafkaController {
   @HttpCode(HttpStatus.ACCEPTED)
   async getTraceFromSdk(@Body() data: any) {
     const traceData = Array.isArray(data) ? data : [data];
-    console.log(JSON.stringify(traceData, null, 2));
     await this.kafkaService.sendSpans(traceData);
 
     return { success: true };

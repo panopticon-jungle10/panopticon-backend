@@ -7,6 +7,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const PORT = process.env.PORT;
 
+  // CORS 설정
+  app.enableCors({
+    origin: ['http://localhost:3000', 'https://qna.jungle-panopticon.cloud'],
+    credentials: true,
+  });
+
   // Protobuf 처리를 위한 raw body 파서
   app.use(
     bodyParser.raw({
