@@ -11,7 +11,7 @@ NestJS 기반 APM 백엔드로, 수집된 로그·스팬을 Elasticsearch에 적
 
 ## 주요 기능
 - APM 로그/스팬 ingest 및 `_bulk` 색인 최적화(배치/바이트/타이머 기준 플러시, 병렬 플러시 한도).
-- 서비스·엔드포인트 메트릭(QPS, p95/p90/p50, 에러율)과 트레이스/스팬/로그 검색 API 제공.
+- 서비스·엔드포인트 메트릭(요청 건수, p95/p90/p50, 에러율)과 트레이스/스팬/로그 검색 API 제공.
 - 롤업 파이프라인(1분 버킷) 및 롤업+RAW 자동 병합 조회, Redis 기반 단기 캐시.
 - Kafka → WebSocket 에러 스트림 브리지로 실시간 에러 알림.
 
@@ -55,7 +55,7 @@ npm run start:aggregator         # 롤업 워커
 - **로그 검색**
   - `GET /query/logs` : 서비스/환경/레벨/트레이스·스팬 ID/메시지로 검색, 최신순 기본 15분
 - **서비스 메트릭**
-  - `GET /query/services/:serviceName/metrics` : QPS, p95/p90/p50, 에러율 시계열. 긴 구간은 롤업+RAW 병합, Redis 캐시 활용
+  - `GET /query/services/:serviceName/metrics` : 요청 건수(버킷 합계), p95/p90/p50, 에러율 시계열. 긴 구간은 롤업+RAW 병합, Redis 캐시 활용
 - **서비스 개요**
   - `GET /query/services` : 시간 구간 내 서비스별 요청수/p95/에러율 랭킹
 - **엔드포인트 메트릭/트레이스**
