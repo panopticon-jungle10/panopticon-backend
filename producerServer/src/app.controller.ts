@@ -1,15 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-import { KafkaService } from './kafka/kafka.service';
-import { S3Service } from './s3/s3.service';
 
 @Controller()
 export class AppController {
-  constructor(
-    private readonly appService: AppService,
-    private readonly kafkaService: KafkaService,
-    private readonly s3Service: S3Service,
-  ) {}
+  constructor(private readonly appService: AppService) {}
 
   @Get()
   getHello(): string {
@@ -18,15 +12,32 @@ export class AppController {
 
   @Get('health')
   async healthCheck() {
-    const isKafkaConnected = this.kafkaService.isProducerConnected();
-    const isS3Connected = await this.s3Service.checkConnection();
-
     return {
       timestamp: new Date().toISOString(),
-      service: {
-        kafka: isKafkaConnected,
-        s3: isS3Connected,
-      },
+      message: 'ok',
     };
   }
+
+  /**
+   * 로컬테스트용 엔드포인트
+   * @param data
+   * @returns
+   */
+  // @Post('sdk/logs')
+  // @HttpCode(HttpStatus.ACCEPTED)
+  // async getLogsFromSdk(@Body() data: any) {
+  //   const logData = Array.isArray(data) ? data : [data];
+  //   console.log(JSON.stringify(logData, null, 2));
+
+  //   return { success: true };
+  // }
+
+  // @Post('sdk/traces')
+  // @HttpCode(HttpStatus.ACCEPTED)
+  // async getTraceFromSdk(@Body() data: any) {
+  //   const traceData = Array.isArray(data) ? data : [data];
+  //   console.log(JSON.stringify(traceData, null, 2));
+
+  //   return { success: true };
+  // }
 }

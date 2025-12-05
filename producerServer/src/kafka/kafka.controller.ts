@@ -6,21 +6,16 @@ import {
   HttpStatus,
   Logger,
   Req,
-  Get,
 } from '@nestjs/common';
 import { KafkaService } from './kafka.service';
 import { ProtobufDecoder } from '../utils/protobuf-decoder';
 import { SpanTransformer } from '../utils/span-transformer';
-import { MetricsInterceptor } from '../metric/metrics.interceptors';
 
 @Controller()
 export class KafkaController {
   private readonly logger = new Logger(KafkaController.name);
 
-  constructor(
-    private readonly kafkaService: KafkaService,
-    private readonly metricsInterceptor: MetricsInterceptor,
-  ) {}
+  constructor(private readonly kafkaService: KafkaService) {}
   @Post('v1/httplogs')
   @HttpCode(HttpStatus.ACCEPTED)
   async getHttpLogs(@Body() data: any) {
@@ -84,12 +79,21 @@ export class KafkaController {
     return { success: true };
   }
 
-  /**
-   * Kafka 메트릭 조회
-   * GET /metrics
-   */
-  @Get('metrics')
-  getMetrics() {
-    return this.metricsInterceptor.getMetrics();
+  @Post('sdk/logs')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async getLogsFromSdk(@Body() data: any) {
+    const logData = Array.isArray(data) ? data : [data];
+    await this.kafkaService.sendLogs(logData);
+
+    return { success: true };
+  }
+
+  @Post('sdk/traces')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async getTraceFromSdk(@Body() data: any) {
+    const traceData = Array.isArray(data) ? data : [data];
+    await this.kafkaService.sendSpans(traceData);
+
+    return { success: true };
   }
 }
