@@ -13,6 +13,7 @@ lerna-debug.log*
 apm_query_api_spec_v2.yaml
 # …but keep README.md files tracked
 !README.md
+!backend/OPERATIONS.md
 # Keep project-specific ignores inside subdirectories (.gitignore within backend/, frontend/, etc.)
 # Keep project-specific ignores inside subdirectories (.gitignore within backend/, frontend/, etc.)
 reports
