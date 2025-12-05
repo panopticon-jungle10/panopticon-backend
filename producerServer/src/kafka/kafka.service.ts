@@ -153,10 +153,8 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
    * Log 데이터 전송 (파티션 키: service_name)
    */
   async sendLogs(logData: any[]) {
-    const normalLog = logData.filter((log) => log.service_name);
-
-    const messages = normalLog.map((log) => ({
-      key: log.trace_id || 'unknown', // 파티션 키: service_name
+    const messages = logData.map((log) => ({
+      key: log.trace_id || log.timestamp, // 파티션 키: trace or timestamp
       value: JSON.stringify(log),
     }));
 
@@ -179,49 +177,4 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   isProducerConnected() {
     return this.producer ? true : false;
   }
-
-  // /**
-  //  * 토픽 생성 (로컬 테스트용)
-  //  * - 각 토픽: 파티션 6개, retention 3일
-  //  * - 현재는 UI 에서 해결가능
-  //  */
-  // async createTopics() {
-  //   try {
-  //     const existingTopics = await this.admin.listTopics();
-  //     const topicsToCreate = [];
-
-  //     // log, trace, metric 토픽 생성
-  //     const topics = ['apm.logs', 'apm.spans', 'apm.logs.error'];
-  //     for (const topic of topics) {
-  //       if (!existingTopics.includes(topic)) {
-  //         topicsToCreate.push({
-  //           topic,
-  //           numPartitions: 4, // 파티션 4개
-  //           replicationFactor: 1, // 로컬 브로커 1개
-  //           configEntries: [
-  //             {
-  //               name: 'retention.ms',
-  //               value: String(3 * 24 * 60 * 60 * 1000), // 3일 (밀리초)
-  //             },
-  //           ],
-  //         });
-  //       }
-  //     }
-
-  //     if (topicsToCreate.length > 0) {
-  //       await this.admin.createTopics({
-  //         topics: topicsToCreate,
-  //         waitForLeaders: true,
-  //       });
-  //       this.logger.log(
-  //         `Created topics: ${topicsToCreate.map((t) => t.topic).join(', ')} (partitions: 6, retention: 3 days, replication: 1)`,
-  //       );
-  //     } else {
-  //       this.logger.log('All required topics already exist');
-  //     }
-  //   } catch (error) {
-  //     this.logger.error('Failed to create topics', error);
-  //     // 토픽 생성 실패는 앱 시작을 막지 않음
-  //   }
-  // }
 }

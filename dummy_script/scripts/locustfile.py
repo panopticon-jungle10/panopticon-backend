@@ -28,7 +28,7 @@ PRODUCER_URL = os.getenv('PRODUCER_URL', 'https://api.jungle-panopticon.cloud/pr
 
 # Target: ~1,000,000 logs (sent in batches of 15)
 BATCH_SIZE = 100
-TARGET_BATCHES = 10000  # 66,667 batches × 15 = 1,000,005 logs
+TARGET_BATCHES = 35000  # 66,667 batches × 15 = 1,000,005 logs
 current_batch_count = 0
 
 
