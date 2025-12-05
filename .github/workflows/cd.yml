@@ -3,8 +3,7 @@ name: CD - Build & Deploy
 on:
   push:
     branches:
-      - feature/read-pre-aggregate
-      # - main
+      - main
   workflow_dispatch:
 
 env:
