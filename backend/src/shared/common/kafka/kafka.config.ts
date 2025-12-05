@@ -60,6 +60,18 @@ interface KafkaMicroserviceParams {
 
 type KafkaSecurityOverrides = Pick<KafkaConfig, "ssl" | "sasl">;
 
+// fetch 옵션 기본값 (환경 변수가 없을 때 사용)
+const DEFAULT_FETCH_MAX_BYTES = 50 * 1024 * 1024; // 50MB
+const DEFAULT_FETCH_MAX_BYTES_PER_PARTITION = 10 * 1024 * 1024; // 10MB
+const DEFAULT_FETCH_MIN_BYTES = 1 * 1024 * 1024; // 1MB
+const DEFAULT_FETCH_MAX_WAIT_MS = 50;
+
+// 양수인 정수 환경 변수만 추출해 Kafka fetch 옵션에 안전하게 반영한다.
+function parsePositiveInt(value: string | undefined): number | undefined {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 function buildKafkaSecurityConfig(): KafkaSecurityOverrides {
   const sslEnabled = process.env.KAFKA_SSL === "true";
   const sslRejectUnauthorized =
@@ -147,6 +159,19 @@ export function createKafkaMicroserviceOptions(
           process.env.KAFKA_CONCURRENT_PARTITIONS ?? "3",
           10,
         ),
+        // fetch 용량/대기 시간을 환경 변수로 조절해 한 번에 더 많은 레코드를 끌어올 수 있다.
+        maxBytes:
+          parsePositiveInt(process.env.KAFKA_FETCH_MAX_BYTES) ??
+          DEFAULT_FETCH_MAX_BYTES,
+        maxBytesPerPartition:
+          parsePositiveInt(process.env.KAFKA_FETCH_MAX_BYTES_PER_PARTITION) ??
+          DEFAULT_FETCH_MAX_BYTES_PER_PARTITION,
+        minBytes:
+          parsePositiveInt(process.env.KAFKA_FETCH_MIN_BYTES) ??
+          DEFAULT_FETCH_MIN_BYTES,
+        maxWaitTimeInMs:
+          parsePositiveInt(process.env.KAFKA_FETCH_MAX_WAIT_MS) ??
+          DEFAULT_FETCH_MAX_WAIT_MS,
       },
     },
   };
