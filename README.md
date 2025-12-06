@@ -49,21 +49,22 @@ npm run start:aggregator         # 롤업 워커
 
 ## API 개요 (주요 엔드포인트)
 - **트레이스**
-  - `GET /query/traces/:traceId` : 단일 트레이스의 스팬/로그 전체 반환(서비스/환경 필터 지원)
+  - `GET /query/traces/:traceId` : 단일 트레이스의 스팬/로그 전체 반환(서비스/환경 필터 선택)
+  - `GET /query/services/:serviceName/traces` : 서비스별 루트 스팬 검색(상태/지연/시간 범위/정렬/페이지)
 - **스팬 검색**
-  - `GET /query/spans` : 서비스/환경/이름/지연/상태/트레이스 ID 기준 검색, 페이지네이션/정렬 지원
+  - `GET /query/spans` : 서비스/환경/이름/종류/상태/지연/트레이스·부모 ID 기준 검색, 페이지네이션/정렬 지원
 - **로그 검색**
-  - `GET /query/logs` : 서비스/환경/레벨/트레이스·스팬 ID/메시지로 검색, 최신순 기본 15분
+  - `GET /query/logs` : 서비스/환경/레벨/트레이스·스팬 ID/메시지로 검색, 기본 최근 15분 범위
 - **서비스 메트릭**
   - `GET /query/services/:serviceName/metrics` : 요청 건수(버킷 합계), p95/p90/p50, 에러율 시계열. 긴 구간은 롤업+RAW 병합, Redis 캐시 활용
 - **서비스 개요**
-  - `GET /query/services` : 시간 구간 내 서비스별 요청수/p95/에러율 랭킹
+  - `GET /query/services` : 시간 구간 내 서비스별 요청수/p95/에러율 목록(정렬/검색/limit 지원)
 - **엔드포인트 메트릭/트레이스**
-  - `GET /query/services/:serviceName/endpoints` : 엔드포인트별 요청수/p95/에러율 상위 N개
-  - `GET /query/services/:serviceName/endpoints/:endpointName/traces` : 최근 에러/느린 트레이스 샘플
+  - `GET /query/services/:serviceName/endpoints` : 엔드포인트별 요청수/p95/에러율 랭킹(정렬/필터/limit)
+  - `GET /query/services/:serviceName/endpoints/:endpointName/traces` : 특정 엔드포인트의 최근 에러/느린 트레이스
 - **WebSocket 에러 알림**
   - 경로: `ws://<host>:3010/ws/error-logs` (환경 변수로 변경 가능)
-  - 이벤트: `error-log` (Kafka `apm.logs.error`의 validated DTO)
+  - 이벤트: `error-log` (Kafka `apm.logs.error` 소비 후 전송)
 
 ## 롤업 파이프라인
 - Aggregator가 닫힌 1분 구간을 계획(MinuteWindowPlanner) → 서비스/환경별 percentiles 및 에러율 집계 → `metrics-apm` 데이터 스트림에 `_bulk create` 저장.
